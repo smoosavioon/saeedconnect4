@@ -1,0 +1,2 @@
+from agents.common import initialize_game_state
+initialize_game_state()
