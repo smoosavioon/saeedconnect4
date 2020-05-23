@@ -1,6 +1,7 @@
 import numpy as np
 from enum import Enum
 from typing import Optional
+from typing import Callable, Tuple
 
 BoardPiece = np.int8  # The data type (dtype) of the board
 NO_PLAYER = BoardPiece(0)  # board[i, j] == NO_PLAYER where the position is empty
@@ -8,6 +9,15 @@ PLAYER1 = BoardPiece(1)  # board[i, j] == PLAYER1 where player 1 has a piece
 PLAYER2 = BoardPiece(2)  # board[i, j] == PLAYER2 where player 2 has a piece
 
 PlayerAction = np.int8  # The column to be played
+
+class SavedState:
+    pass
+
+
+GenMove = Callable[
+    [np.ndarray, BoardPiece, Optional[SavedState]],  # Arguments for the generate_move function
+    Tuple[PlayerAction, Optional[SavedState]]  # Return type of the generate_move function
+]
 
 class GameState(Enum):
     IS_WIN = 1
@@ -18,7 +28,8 @@ def initialize_game_state() -> np.ndarray:
     """
     Returns an ndarray, shape (6, 7) and data type (dtype) BoardPiece, initialized to 0 (NO_PLAYER).
     """
-    raise NotImplementedError()
+    board = np.zeros((6,7), dtype=BoardPiece)
+    return board
 
 def pretty_print_board(board: np.ndarray) -> str:
     """
@@ -35,7 +46,19 @@ def pretty_print_board(board: np.ndarray) -> str:
     |==============|
     |0 1 2 3 4 5 6 |
     """
-    raise NotImplementedError()
+    print('==============')
+    for i in range(6):
+        for j in range(7):
+            if np.flipud(board)[i][j] == 0:
+                print('.', end=" ")
+            elif np.flipud(board)[i][j] == 1:
+                print('O', end=" ")
+            else:
+                print('X', end=" ")
+
+        print()
+    print('==============', '\n0 1 2 3 4 5 6')
+    return np.str(board)
 
 def string_to_board(pp_board: str) -> np.ndarray:
     """
@@ -43,7 +66,8 @@ def string_to_board(pp_board: str) -> np.ndarray:
     This is quite useful for debugging, when the agent crashed and you have the last
     board state as a string.
     """
-    raise NotImplementedError()
+
+    return np.array(print_board(board))
 
 def apply_player_action(
     board: np.ndarray, action: PlayerAction, player: BoardPiece, copy: bool = False
@@ -52,7 +76,13 @@ def apply_player_action(
     Sets board[i, action] = player, where i is the lowest open row. The modified
     board is returned. If copy is True, makes a copy of the board before modifying it.
     """
-    raise NotImplementedError()
+    i = 0
+    while board[i, action] != 0:
+        i += 1
+
+    board[i, action] = player
+
+    return board
 
 def connected_four(
     board: np.ndarray, player: BoardPiece, last_action: Optional[PlayerAction] = None,
@@ -63,7 +93,41 @@ def connected_four(
     If desired, the last action taken (i.e. last column played) can be provided
     for potential speed optimisation.
     """
-    raise NotImplemented()
+    # Size of sequence
+    seq = np.array([player, player, player, player])
+    Nseq = seq.size
+    i = 0
+    while board[i, last_action] != 0:
+        i += 1
+
+    # Range of sequence
+    r_seq = np.arange(Nseq)
+
+    # Match up with the input sequence & get the matching starting indices.
+    diag1 = board.diagonal(offset=last_action - i)
+    diag2 = np.flipud(board).diagonal(offset=last_action - i)
+    R = (board[i, np.arange(board.shape[1] - Nseq + 1)[:, None] + r_seq] == seq).all(1)
+    if R.any() > 0:
+        return True
+    else:
+        C = (board[np.arange(board.shape[0] - Nseq + 1)[:, None] + r_seq, last_action] == seq.T).all(1)
+        if C.any() > 0:
+            return True
+        elif diag1.size - Nseq + 1 > 0:
+            D1 = (diag1[np.arange(diag1.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
+            if D1.any() > 0:
+                return True
+            else:
+                return False
+        elif diag2.size - Nseq + 1 > 0:
+            D2 = (diag2[np.arange(diag2.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
+            if D2.any() > 0:
+                return True
+            else:
+                return False
+        else:
+            return False
+
 
 def check_end_state(
     board: np.ndarray, player: BoardPiece, last_action: Optional[PlayerAction] = None,
@@ -73,4 +137,11 @@ def check_end_state(
     action won (GameState.IS_WIN) or drawn (GameState.IS_DRAW) the game,
     or is play still on-going (GameState.STILL_PLAYING)?
     """
-    raise NotImplemented()
+    if connected_four(board, player, last_action) == True:
+        return GameState.IS_WIN
+    elif connected_four(board, player, last_action) == False and np.where(board==0).size == 0:
+        return GameState.IS_DRAW
+    else:
+        return GameState.STILL_PLAYING
+
+
