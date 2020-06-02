@@ -52,13 +52,13 @@ def pretty_print_board(board: np.ndarray) -> str:
             if np.flipud(board)[i][j] == 0:
                 print('.', end=" ")
             elif np.flipud(board)[i][j] == 1:
-                print('O', end=" ")
-            else:
                 print('X', end=" ")
+            else:
+                print('O', end=" ")
 
         print()
     print('==============', '\n0 1 2 3 4 5 6')
-    return np.str(board)
+    #return np.str(board)
 
 def string_to_board(pp_board: str) -> np.ndarray:
     """
@@ -77,7 +77,7 @@ def apply_player_action(
     board is returned. If copy is True, makes a copy of the board before modifying it.
     """
     i = 0
-    while board[i, action] != 0:
+    while board[i][action] != 0:
         i += 1
 
     board[i, action] = player
@@ -85,7 +85,7 @@ def apply_player_action(
     return board
 
 def connected_four(
-    board: np.ndarray, player: BoardPiece, last_action: Optional[PlayerAction] = None,
+    board: np.ndarray, player: BoardPiece, last_action: PlayerAction,
 ) -> bool:
     """
     Returns True if there are four adjacent pieces equal to `player` arranged
@@ -97,16 +97,16 @@ def connected_four(
     seq = np.array([player, player, player, player])
     Nseq = seq.size
     i = 0
-    while board[i, last_action] != 0:
+    while i<6 and board[i][last_action] != 0:
         i += 1
 
     # Range of sequence
     r_seq = np.arange(Nseq)
 
     # Match up with the input sequence & get the matching starting indices.
-    diag1 = board.diagonal(offset=last_action - i)
-    diag2 = np.flipud(board).diagonal(offset=last_action - i)
-    R = (board[i, np.arange(board.shape[1] - Nseq + 1)[:, None] + r_seq] == seq).all(1)
+    diag1 = board.diagonal(offset=last_action - (i-1))
+    diag2 = np.flipud(board).diagonal(offset=last_action - (i-1))
+    R = (board[i-1, np.arange(board.shape[1] - Nseq + 1)[:, None] + r_seq] == seq).all(1)
     if R.any() > 0:
         return True
     else:
@@ -117,6 +117,12 @@ def connected_four(
             D1 = (diag1[np.arange(diag1.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
             if D1.any() > 0:
                 return True
+            elif diag2.size - Nseq + 1 > 0:
+                D2 = (diag2[np.arange(diag2.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
+                if D2.any() > 0:
+                    return True
+                else:
+                    return False
             else:
                 return False
         elif diag2.size - Nseq + 1 > 0:
@@ -130,7 +136,7 @@ def connected_four(
 
 
 def check_end_state(
-    board: np.ndarray, player: BoardPiece, last_action: Optional[PlayerAction] = None,
+    board: np.ndarray, player: BoardPiece, last_action: PlayerAction,
 ) -> GameState:
     """
     Returns the current game state for the current `player`, i.e. has their last
@@ -139,7 +145,7 @@ def check_end_state(
     """
     if connected_four(board, player, last_action) == True:
         return GameState.IS_WIN
-    elif connected_four(board, player, last_action) == False and np.where(board==0).size == 0:
+    elif connected_four(board, player, last_action) == False and np.sum(np.where(board==0)) == 0:
         return GameState.IS_DRAW
     else:
         return GameState.STILL_PLAYING

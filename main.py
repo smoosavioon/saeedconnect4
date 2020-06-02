@@ -2,6 +2,9 @@ import numpy as np
 from typing import Optional, Callable
 from agents.common import PlayerAction, BoardPiece, SavedState, GenMove
 from agents.common import initialize_game_state
+from agents.agent_random import generate_move
+from agents.agent_minimax import alphabeta
+import math
 
 initialize_game_state()
 
@@ -16,7 +19,7 @@ def user_move(board: np.ndarray, _player: BoardPiece, saved_state: Optional[Save
 
 
 def human_vs_agent(
-    generate_move_1: GenMove,
+    generate_move_1: GenMove = alphabeta,
     generate_move_2: GenMove = user_move,
     player_1: str = "Player 1",
     player_2: str = "Player 2",
@@ -24,10 +27,12 @@ def human_vs_agent(
     args_2: tuple = (),
     init_1: Callable = lambda board, player: None,
     init_2: Callable = lambda board, player: None,
+    last_action: PlayerAction = np.int8,
 ):
     import time
     from agents.common import PLAYER1, PLAYER2, GameState
     from agents.common import initialize_game_state, pretty_print_board, apply_player_action, check_end_state
+
 
     players = (PLAYER1, PLAYER2)
     for play_first in (1, -1):
@@ -55,7 +60,7 @@ def human_vs_agent(
                 )
                 print(f"Move time: {time.time() - t0:.3f}s")
                 apply_player_action(board, action, player)
-                end_state = check_end_state(board, player)
+                end_state = check_end_state(board, player, action)
                 if end_state != GameState.STILL_PLAYING:
                     print(pretty_print_board(board))
                     if end_state == GameState.IS_DRAW:
@@ -68,4 +73,6 @@ def human_vs_agent(
                     break
 
 if __name__ == "__main__":
-    human_vs_agent(user_move)
+    #human_vs_agent(user_move)
+    #human_vs_agent(generate_move)
+    human_vs_agent(alphabeta)
