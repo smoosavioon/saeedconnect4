@@ -3,7 +3,7 @@ from typing import Optional, Callable
 from agents.common import PlayerAction, BoardPiece, SavedState, GenMove
 from agents.common import initialize_game_state
 from agents.agent_random import generate_move
-from agents.agent_minimax import alphabeta
+from agents.agent_minimax import generate_move_minimax
 import math
 
 initialize_game_state()
@@ -19,7 +19,7 @@ def user_move(board: np.ndarray, _player: BoardPiece, saved_state: Optional[Save
 
 
 def human_vs_agent(
-    generate_move_1: GenMove = alphabeta,
+    generate_move_1: GenMove = generate_move_minimax,
     generate_move_2: GenMove = user_move,
     player_1: str = "Player 1",
     player_2: str = "Player 2",
@@ -75,4 +75,4 @@ def human_vs_agent(
 if __name__ == "__main__":
     #human_vs_agent(user_move)
     #human_vs_agent(generate_move)
-    human_vs_agent(alphabeta)
+    human_vs_agent(generate_move_minimax)

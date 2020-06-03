@@ -2,6 +2,8 @@ import numpy as np
 from enum import Enum
 from typing import Optional
 from typing import Callable, Tuple
+from numba import njit
+
 
 BoardPiece = np.int8  # The data type (dtype) of the board
 NO_PLAYER = BoardPiece(0)  # board[i, j] == NO_PLAYER where the position is empty
@@ -77,75 +79,51 @@ def apply_player_action(
     board is returned. If copy is True, makes a copy of the board before modifying it.
     """
     i = 0
-    while board[i][action] != 0:
+    while board[i, action] != 0:
         i += 1
 
     board[i, action] = player
 
     return board
 
+@njit()
 def connected_four(
-    board: np.ndarray, player: BoardPiece, last_action: PlayerAction,
+    board: np.ndarray, player: BoardPiece, _last_action: Optional[PlayerAction] = None
 ) -> bool:
-    """
-    Returns True if there are four adjacent pieces equal to `player` arranged
-    in either a horizontal, vertical, or diagonal line. Returns False otherwise.
-    If desired, the last action taken (i.e. last column played) can be provided
-    for potential speed optimisation.
-    """
-    # Size of sequence
-    seq = np.array([player, player, player, player])
-    Nseq = seq.size
-    i = 0
-    while i<6 and board[i][last_action] != 0:
-        i += 1
-
-    # Range of sequence
-    r_seq = np.arange(Nseq)
-
-    # Match up with the input sequence & get the matching starting indices.
-    diag1 = board.diagonal(offset=last_action - (i-1))
-    diag2 = np.flipud(board).diagonal(offset=last_action - (i-1))
-    R = (board[i-1, np.arange(board.shape[1] - Nseq + 1)[:, None] + r_seq] == seq).all(1)
-    if R.any() > 0:
-        return True
-    else:
-        C = (board[np.arange(board.shape[0] - Nseq + 1)[:, None] + r_seq, last_action] == seq.T).all(1)
-        if C.any() > 0:
-            return True
-        elif diag1.size - Nseq + 1 > 0:
-            D1 = (diag1[np.arange(diag1.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
-            if D1.any() > 0:
+    CONNECT_N = 4
+    rows, cols = board.shape
+    rows_edge = rows - CONNECT_N + 1
+    cols_edge = cols - CONNECT_N + 1
+    for i in range(rows):
+        for j in range(cols_edge):
+            if np.all(board[i, j:j+CONNECT_N] == player):
                 return True
-            elif diag2.size - Nseq + 1 > 0:
-                D2 = (diag2[np.arange(diag2.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
-                if D2.any() > 0:
-                    return True
-                else:
-                    return False
-            else:
-                return False
-        elif diag2.size - Nseq + 1 > 0:
-            D2 = (diag2[np.arange(diag2.size - Nseq + 1)[:, None] + r_seq] == seq.T).all(1)
-            if D2.any() > 0:
+    for i in range(rows_edge):
+        for j in range(cols):
+            if np.all(board[i:i+CONNECT_N, j] == player):
                 return True
-            else:
-                return False
-        else:
-            return False
+    for i in range(rows_edge):
+        for j in range(cols_edge):
+            block = board[i:i+CONNECT_N, j:j+CONNECT_N]
+            if np.all(np.diag(block) == player):
+                return True
+            if np.all(np.diag(block[::-1, :]) == player):
+                return True
+    return False
 
 
 def check_end_state(
-    board: np.ndarray, player: BoardPiece, last_action: PlayerAction,
+    board: np.ndarray, player: BoardPiece, last_action: Optional[PlayerAction]=None,
 ) -> GameState:
     """
     Returns the current game state for the current `player`, i.e. has their last
     action won (GameState.IS_WIN) or drawn (GameState.IS_DRAW) the game,
     or is play still on-going (GameState.STILL_PLAYING)?
     """
-    if connected_four(board, player, last_action) == True:
+    is_con = connected_four(board, player, last_action)
+    if is_con:
         return GameState.IS_WIN
-    elif connected_four(board, player, last_action) == False and np.sum(np.where(board==0)) == 0:
+    elif np.sum(np.where(board==0)) == 0:
         return GameState.IS_DRAW
     else:
         return GameState.STILL_PLAYING

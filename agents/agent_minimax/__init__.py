@@ -1,1 +1,1 @@
-from .minimax import alpha_beta as alphabeta
+from .minimax import generate_move_minimax
