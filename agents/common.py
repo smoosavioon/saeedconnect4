@@ -72,7 +72,7 @@ def string_to_board(pp_board: str) -> np.ndarray:
     return np.array(print_board(board))
 
 def apply_player_action(
-    board: np.ndarray, action: PlayerAction, player: BoardPiece, copy: bool = False
+    board: np.ndarray, action: PlayerAction, player: BoardPiece, copy: bool
 ) -> np.ndarray:
     """
     Sets board[i, action] = player, where i is the lowest open row. The modified
@@ -82,9 +82,12 @@ def apply_player_action(
     while board[i, action] != 0:
         i += 1
 
-    board[i, action] = player
-
-    return board
+    if copy:
+        board.copy()[i, action] = player
+        return board.copy()
+    else:
+        board[i, action] = player
+        return board
 
 @njit()
 def connected_four(

@@ -1,32 +1,32 @@
 import numpy as np
 from agents.common import PlayerAction, BoardPiece, SavedState, GenMove, GameState, connected_four, PLAYER1, PLAYER2, apply_player_action, check_end_state
 import math
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 
 
-def evaluate_window(window: np.array, player: BoardPiece) -> np.int:
-
+def evaluate_window(window: np.array, player: BoardPiece) -> np.float:
+    W = list(window)
     score = 0
     opp_player = PLAYER2
     if player == PLAYER2:
         opp_player = PLAYER1
 
-    if window.count(player) == 4:
+    if W.count(player) == 4:
         score += 100
-    elif window.count(player) == 3 and window.count(0) == 1:
+    elif W.count(player) == 3 and W.count(0) == 1:
         score += 5
-    elif window.count(player) == 2 and window.count(0) == 2:
+    elif W.count(player) == 2 and W.count(0) == 2:
         score += 2
 
-    if window.count(opp_player) == 3 and window.count(0) == 1:
+    if W.count(opp_player) == 3 and W.count(0) == 1:
         score -= 4
 
     return score
 
 
-def score_position(board: np.ndarray, player: BoardPiece) -> np.int:
+def score_position(board: np.ndarray, player: BoardPiece) -> np.float:
     score = 0
-    center_column = board[:,3]
+    center_column = list(board[:,3])
     center_count = center_column.count(player)
     score += center_count * 3
 
@@ -60,58 +60,57 @@ def score_position(board: np.ndarray, player: BoardPiece) -> np.int:
 
 def alpha_beta(
         board: np.ndarray, player: BoardPiece, depth: np.int, alpha: np.float, beta: np.float, maximizingPlayer: bool
-) -> tuple[PlayerAction, np.int]:
+) -> Tuple[PlayerAction, np.float]:
     # Choose a valid, non-full column randomly and return it as `action`
-    valid_columns = np.where(board[-1, :] == 0)
-    opp_player = PLAYER2
-    if player == PLAYER2:
-        opp_player = PLAYER1
-    game_state = check_end_state(board, player)
+    valid_columns = np.where(board[-1, :] == 0)[0]
+    opp_player = PLAYER2 if player == PLAYER1 else PLAYER1
+    game_state = check_end_state(board, opp_player if maximizingPlayer else player)
     if depth == 0 or game_state in (GameState.IS_DRAW, GameState.IS_WIN):
         if game_state == GameState.IS_WIN:
-            if opp_player == PLAYER2:
-                return PlayerAction(np.random.choice(np.array(valid_columns).flatten(), 1)), 1000000000000
+            if maximizingPlayer:
+                return PlayerAction(-1), -1000000000000
             else:
-                return PlayerAction(np.random.choice(np.array(valid_columns).flatten(), 1)), 1000000000000
+                return PlayerAction(-1), 1000000000000
+
         elif game_state == GameState.IS_DRAW:
             return PlayerAction(np.random.choice(np.array(valid_columns).flatten(), 1)), 0
-        else:
+        else:   # depth = 0
             return PlayerAction(np.random.choice(np.array(valid_columns).flatten(), 1)), score_position(board, player)
 
     if maximizingPlayer:
         value = -math.inf
         column = np.random.choice(np.array(valid_columns).flatten(), 1)
         for col in valid_columns:
-            board_copy = board.copy()
-            apply_player_action(board_copy, PlayerAction(col), player)
-            new_score = minimax(board_copy, player, depth - 1, alpha, beta, False)
+            # board_copy = board.copy()
+            new_board = apply_player_action(board, PlayerAction(col), player, True)
+            new_score = alpha_beta(new_board, opp_player, depth - 1, alpha, beta, False)[1]
             if new_score > value:
                 value = new_score
                 column = col
             alpha = max(alpha, value)
             if alpha >= beta:
                 break
-        return PlayerAction(column), saved_state
+        return PlayerAction(column), value
 
     else:  # Minimizing player
         value = math.inf
         column = np.random.choice(np.array(valid_columns).flatten(), 1)
-        for col in valid_locations:
-            board_copy = board.copy()
-            apply_player_action(board_copy, PlayerAction(col), player)
-            new_score = minimax(board_copy, player, depth - 1, alpha, beta, True)
+        for col in valid_columns:
+            # board_copy = board.copy()
+            new_board = apply_player_action(board, PlayerAction(col), player, True)
+            new_score = alpha_beta(new_board, opp_player, depth - 1, alpha, beta, True)[1]
             if new_score < value:
                 value = new_score
                 column = col
             beta = min(beta, value)
             if alpha >= beta:
                 break
-        return PlayerAction(column), saved_state
+        return PlayerAction(column), value
 
 
 def generate_move_minimax(
     board: np.ndarray, _player: BoardPiece, saved_state: Optional[SavedState]
-) -> tuple[PlayerAction, SavedState]:
+) -> Tuple[PlayerAction, SavedState]:
     # Choose a valid, non-full column randomly and return it as `action`
     depth = 4
     alpha = -math.inf

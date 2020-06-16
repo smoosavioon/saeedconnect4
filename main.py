@@ -59,7 +59,7 @@ def human_vs_agent(
                     board.copy(), player, saved_state[player], *args
                 )
                 print(f"Move time: {time.time() - t0:.3f}s")
-                apply_player_action(board, action, player)
+                apply_player_action(board, action, player, False)
                 end_state = check_end_state(board, player, action)
                 if end_state != GameState.STILL_PLAYING:
                     print(pretty_print_board(board))
