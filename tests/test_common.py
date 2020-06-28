@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from agents.common import BoardPiece, NO_PLAYER
+from agents.common import BoardPiece, NO_PLAYER, GameState
 import pexpect
 
 def test_initialize_game_state():
@@ -20,7 +20,7 @@ def test_pretty_print_board():
     assert isinstance(ret, np.str)
 
 def test_string_to_board():
-    from agents.common import string_to_board
+    from agents.common import string_to_board, pretty_print_board
     board = np.zeros((6, 7), dtype=BoardPiece)
     ret = string_to_board(pretty_print_board(board))
     assert isinstance(ret, np.ndarray)
@@ -31,6 +31,7 @@ def test_apply_player_action():
     board = np.zeros((6, 7), dtype=BoardPiece)
     action = PlayerAction(2)
     player = BoardPiece(2)
+    copy = True
     ret = apply_player_action(board, action, player, copy)
     assert isinstance(ret, np.ndarray)
 

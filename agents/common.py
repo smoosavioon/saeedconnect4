@@ -33,7 +33,7 @@ def initialize_game_state() -> np.ndarray:
     board = np.zeros((6,7), dtype=BoardPiece)
     return board
 
-def pretty_print_board(board: np.ndarray) -> str:
+def pretty_print_board(board: np.ndarray):
     """
     Should return `board` converted to a human readable string representation,
     to be used when playing or printing diagnostics to the console (stdout). The piece in
@@ -60,7 +60,7 @@ def pretty_print_board(board: np.ndarray) -> str:
 
         print()
     print('==============', '\n0 1 2 3 4 5 6')
-    #return np.str(board)
+
 
 def string_to_board(pp_board: str) -> np.ndarray:
     """
@@ -69,7 +69,7 @@ def string_to_board(pp_board: str) -> np.ndarray:
     board state as a string.
     """
 
-    return np.array(print_board(board))
+    return np.array(pretty_print_board(pp_board))
 
 def apply_player_action(
     board: np.ndarray, action: PlayerAction, player: BoardPiece, copy: bool
@@ -83,11 +83,10 @@ def apply_player_action(
         i += 1
 
     if copy:
-        board.copy()[i, action] = player
-        return board.copy()
-    else:
-        board[i, action] = player
-        return board
+        board = board.copy()
+
+    board[i, action] = player
+    return board
 
 @njit()
 def connected_four(
