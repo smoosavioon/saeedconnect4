@@ -32,3 +32,5 @@ def test_generate_move_minimax():
     player = BoardPiece(2)
     ret = generate_move_minimax(board, player)
     assert isinstance(ret, tuple())
+
+# Remark: again, your tests are not specifically testing for correctness

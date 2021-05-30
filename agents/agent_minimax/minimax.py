@@ -5,12 +5,19 @@ from typing import Optional, Callable, Tuple
 
 
 def evaluate_window(window: np.array, player: BoardPiece) -> np.float:
+    # Remark: please write docstrings for your functions
     W = list(window)
     score = 0
-    opp_player = PLAYER2
+    opp_player = PLAYER2 # Remark: refactor this to its own function
     if player == PLAYER2:
         opp_player = PLAYER1
 
+    # REmark: you can only have one of the cases below, so why is there a second if statement? There's also
+    #         no need to initialize the heuristic_value and then update it, since you will only modify it once (i.e. you
+    #         could just as well define it in each if/elif part
+    # Remark: include more cases for the opponent, especially for a win
+    # Remark: also, usually the heuristic is symmetric, i.e. 3 pieces for player and 1 for opponent should be the same value
+    #         with opposite sign as 3 pieces for opponent and 1 for player.
     if W.count(player) == 4:
         score += 100
     elif W.count(player) == 3 and W.count(0) == 1:
@@ -25,10 +32,12 @@ def evaluate_window(window: np.array, player: BoardPiece) -> np.float:
 
 
 def score_position(board: np.ndarray, player: BoardPiece) -> np.float:
+    # Remark: this function is quite long, try refactoring it
     score = 0
     center_column = list(board[:,3])
     center_count = center_column.count(player)
     score += center_count * 3
+    # Remark: to be consistent, you should also account for the opponent here
 
     ## Score Horizontal
     for r in range(6):
@@ -62,9 +71,10 @@ def alpha_beta(
         board: np.ndarray, player: BoardPiece, depth: np.int, alpha: np.float, beta: np.float, maximizingPlayer: bool
 ) -> Tuple[PlayerAction, np.float]:
     # Choose a valid, non-full column randomly and return it as `action`
-    valid_columns = np.where(board[-1, :] == 0)[0]
-    opp_player = PLAYER2 if player == PLAYER1 else PLAYER1
+    valid_columns = np.where(board[-1, :] == 0)[0]  # Remark: this should be its own function, reused elsewhere
+    opp_player = PLAYER2 if player == PLAYER1 else PLAYER1  # Remark: should also be a function on its own
     game_state = check_end_state(board, opp_player if maximizingPlayer else player)
+    # Remark: you don't need to check for wins of both players, only the player who last moved can have a win.
     if depth == 0 or game_state in (GameState.IS_DRAW, GameState.IS_WIN):
         if game_state == GameState.IS_WIN:
             if maximizingPlayer:
@@ -79,7 +89,7 @@ def alpha_beta(
 
     if maximizingPlayer:
         value = -math.inf
-        column = np.random.choice(np.array(valid_columns).flatten(), 1)
+        column = np.random.choice(np.array(valid_columns).flatten(), 1)  # Remark: randomizing here is not necessary, since you pick a move among moves later anyway.
         for col in valid_columns:
             # board_copy = board.copy()
             new_board = apply_player_action(board, PlayerAction(col), player, True)

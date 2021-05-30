@@ -3,6 +3,9 @@ import pytest
 from agents.common import BoardPiece, NO_PLAYER, GameState
 import pexpect
 
+# Remark: as we talked about before, you don't really test whether the functions work correctly.
+#         You should create a few example cases to check explicitly
+
 def test_initialize_game_state():
     from agents.common import initialize_game_state
 

@@ -68,7 +68,7 @@ def string_to_board(pp_board: str) -> np.ndarray:
     This is quite useful for debugging, when the agent crashed and you have the last
     board state as a string.
     """
-
+    # Remark: that's not what this function is supposed to do
     return np.array(pretty_print_board(pp_board))
 
 def apply_player_action(
@@ -81,6 +81,7 @@ def apply_player_action(
     i = 0
     while board[i, action] != 0:
         i += 1
+    # Remark: use NO_PLAYER here instead of 0
 
     if copy:
         board = board.copy()
@@ -92,6 +93,7 @@ def apply_player_action(
 def connected_four(
     board: np.ndarray, player: BoardPiece, _last_action: Optional[PlayerAction] = None
 ) -> bool:
+    # remark: isn't that just the function from the profiling tutorial?
     CONNECT_N = 4
     rows, cols = board.shape
     rows_edge = rows - CONNECT_N + 1
@@ -126,6 +128,8 @@ def check_end_state(
     if is_con:
         return GameState.IS_WIN
     elif np.sum(np.where(board==0)) == 0:
+        # Remark: it would be cleaner to check whether there's any NO_PLAYER on the board
+        # Remark: e.g. (board == NO_PLAYER).any()
         return GameState.IS_DRAW
     else:
         return GameState.STILL_PLAYING
